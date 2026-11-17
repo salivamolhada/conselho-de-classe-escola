@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Administrador ou Direção autorizada no sistema escolar.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 200 },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "SchoolTeacher": {
+      "title": "SchoolTeacher",
+      "description": "Docente cadastrado no diretório pedagógico (sem dados pessoais sensíveis).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "role": { "type": "string", "enum": ["professor", "diretora"] },
+        "subject": { "type": "string", "maxLength": 100 },
+        "classes": { "type": "array", "description": "Lista limitada de turmas atribuídas ao docente." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "role", "createdAt", "updatedAt"]
+    },
+    "SchoolUserSecret": {
+      "title": "SchoolUserSecret",
+      "description": "Credenciais e e-mail institucional isolados por segurança (PII).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 200 },
+        "username": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "accessCode": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "username", "accessCode", "updatedAt"]
+    },
+    "SchoolClass": {
+      "title": "SchoolClass",
+      "description": "Turma escolar cadastrada pela Diretoria.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "shift": { "type": "string", "minLength": 2, "maxLength": 50 },
+        "year": { "type": "string", "minLength": 4, "maxLength": 10 },
+        "description": { "type": "string", "maxLength": 240 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "shift", "year", "createdAt", "updatedAt"]
+    },
+    "SchoolStudent": {
+      "title": "SchoolStudent",
+      "description": "Estudante matriculado em uma turma da escola.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 140 },
+        "rollNumber": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "classGroup": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "status": { "type": "string", "enum": ["ativo", "atencao", "transferido"] },
+        "notes": { "type": "string", "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "rollNumber", "classGroup", "status", "createdAt", "updatedAt"]
+    },
+    "ReportSection": {
+      "title": "ReportSection",
+      "description": "Seção do questionário oficial de Pré-Conselho.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "order", "createdAt", "updatedAt"]
+    },
+    "ReportQuestion": {
+      "title": "ReportQuestion",
+      "description": "Pergunta do questionário oficial de Pré-Conselho.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "sectionId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "prompt": { "type": "string", "minLength": 4, "maxLength": 400 },
+        "placeholder": { "type": "string", "maxLength": 400 },
+        "required": { "type": "boolean" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sectionId", "prompt", "required", "order", "createdAt", "updatedAt"]
+    },
+    "PreCouncilReport": {
+      "title": "PreCouncilReport",
+      "description": "Ficha individual de Pré-Conselho de Classe preenchida por docente.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "schoolName": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "schoolSubtitle": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "teacherId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "teacherName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "component": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "classGroup": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "date": { "type": "string", "minLength": 4, "maxLength": 30 },
+        "bimester": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "status": { "type": "string", "enum": ["pendente", "rascunho", "enviado", "visto"] },
+        "answers": { "type": "object" },
+        "dimensionRatings": { "type": "object" },
+        "studentRatings": { "type": "object" },
+        "pedagogaSignature": { "type": "object" },
+        "diretoraSignature": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "ownerUid",
+        "schoolName",
+        "schoolSubtitle",
+        "title",
+        "teacherId",
+        "teacherName",
+        "component",
+        "classGroup",
+        "date",
+        "bimester",
+        "status",
+        "answers",
+        "pedagogaSignature",
+        "diretoraSignature",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Administradores da Diretoria Escolar."
+    },
+    "/school_teachers/{teacherId}": {
+      "schema": { "$ref": "#/entities/SchoolTeacher" },
+      "description": "Diretório público de professores (sem PII)."
+    },
+    "/school_user_secrets/{userId}": {
+      "schema": { "$ref": "#/entities/SchoolUserSecret" },
+      "description": "Dados institucionais privados de acesso (PII isolado)."
+    },
+    "/school_classes/{classId}": {
+      "schema": { "$ref": "#/entities/SchoolClass" },
+      "description": "Turmas da escola."
+    },
+    "/school_students/{studentId}": {
+      "schema": { "$ref": "#/entities/SchoolStudent" },
+      "description": "Estudantes matriculados."
+    },
+    "/school_sections/{sectionId}": {
+      "schema": { "$ref": "#/entities/ReportSection" },
+      "description": "Seções do questionário de Pré-Conselho."
+    },
+    "/school_questions/{questionId}": {
+      "schema": { "$ref": "#/entities/ReportQuestion" },
+      "description": "Perguntas do questionário de Pré-Conselho."
+    },
+    "/school_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/PreCouncilReport" },
+      "description": "Fichas individuais de Pré-Conselho."
+    }
+  }
+}

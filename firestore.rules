@@ -1,0 +1,313 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(uid) {
+      return isVerifiedUser() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'maioneseraimundo@gmail.com'
+      );
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'createdAt'])
+        && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 200
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSchoolTeacher(data) {
+      return data.keys().hasAll(['id', 'name', 'role', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'name', 'role', 'subject', 'classes', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 120
+        && data.role in ['professor', 'diretora']
+        && (!('subject' in data) || (data.subject is string && data.subject.size() <= 100))
+        && (!('classes' in data) || (
+          data.classes is list
+          && data.classes.size() <= 20
+          && (data.classes.size() == 0 || (data.classes[0] is string && data.classes[0].size() <= 60))
+        ))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserSecret(data) {
+      return data.keys().hasAll(['id', 'email', 'username', 'accessCode', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'email', 'username', 'accessCode', 'updatedAt'])
+        && isValidId(data.id)
+        && (!('ownerUid' in data) || isValidId(data.ownerUid))
+        && data.email is string && data.email.size() <= 200
+        && data.username is string && data.username.size() >= 1 && data.username.size() <= 120
+        && data.accessCode is string && data.accessCode.size() >= 1 && data.accessCode.size() <= 64
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSchoolClass(data) {
+      return data.keys().hasAll(['id', 'name', 'shift', 'year', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'name', 'shift', 'year', 'description', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 60
+        && data.shift is string && data.shift.size() >= 2 && data.shift.size() <= 50
+        && data.year is string && data.year.size() >= 4 && data.year.size() <= 10
+        && (!('description' in data) || (data.description is string && data.description.size() <= 240))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'name', 'rollNumber', 'classGroup', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'name', 'rollNumber', 'classGroup', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 140
+        && data.rollNumber is string && data.rollNumber.size() >= 1 && data.rollNumber.size() <= 20
+        && data.classGroup is string && data.classGroup.size() >= 2 && data.classGroup.size() <= 60
+        && data.status in ['ativo', 'atencao', 'transferido']
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 400))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSection(data) {
+      return data.keys().hasAll(['id', 'title', 'order', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'title', 'order', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 160
+        && data.order is number && data.order >= 0 && data.order <= 1000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidQuestion(data) {
+      return data.keys().hasAll(['id', 'sectionId', 'prompt', 'required', 'order', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'sectionId', 'prompt', 'placeholder', 'required', 'order', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.sectionId)
+        && data.prompt is string && data.prompt.size() >= 4 && data.prompt.size() <= 400
+        && (!('placeholder' in data) || (data.placeholder is string && data.placeholder.size() <= 400))
+        && data.required is bool
+        && data.order is number && data.order >= 0 && data.order <= 1000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSignatureMap(sig) {
+      return sig is map
+        && sig.keys().hasAll(['signed'])
+        && sig.keys().hasOnly(['signed', 'signedBy', 'signedAt', 'notes'])
+        && sig.signed is bool
+        && (!('signedBy' in sig) || (sig.signedBy is string && sig.signedBy.size() <= 120))
+        && (!('signedAt' in sig) || (sig.signedAt is string && sig.signedAt.size() <= 60))
+        && (!('notes' in sig) || (sig.notes is string && sig.notes.size() <= 500));
+    }
+
+    function isValidReport(data) {
+      return data.keys().hasAll([
+          'id', 'ownerUid', 'schoolName', 'schoolSubtitle', 'title',
+          'teacherId', 'teacherName', 'component', 'classGroup',
+          'date', 'bimester', 'status', 'answers',
+          'pedagogaSignature', 'diretoraSignature', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'schoolName', 'schoolSubtitle', 'title',
+          'teacherId', 'teacherName', 'component', 'classGroup',
+          'date', 'bimester', 'status', 'answers',
+          'dimensionRatings', 'studentRatings',
+          'pedagogaSignature', 'diretoraSignature', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.schoolName is string && data.schoolName.size() >= 2 && data.schoolName.size() <= 160
+        && data.schoolSubtitle is string && data.schoolSubtitle.size() >= 2 && data.schoolSubtitle.size() <= 160
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 160
+        && data.teacherId is string && data.teacherId.size() >= 1 && data.teacherId.size() <= 128
+        && data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 120
+        && data.component is string && data.component.size() >= 2 && data.component.size() <= 100
+        && data.classGroup is string && data.classGroup.size() >= 2 && data.classGroup.size() <= 60
+        && data.date is string && data.date.size() >= 4 && data.date.size() <= 30
+        && data.bimester is string && data.bimester.size() >= 2 && data.bimester.size() <= 40
+        && data.status in ['pendente', 'rascunho', 'enviado', 'visto']
+        && data.answers is map && data.answers.size() <= 50
+        && (!('dimensionRatings' in data) || (data.dimensionRatings is map && data.dimensionRatings.size() <= 20))
+        && (!('studentRatings' in data) || (data.studentRatings is map && data.studentRatings.size() <= 100))
+        && isValidSignatureMap(data.pedagogaSignature)
+        && isValidSignatureMap(data.diretoraSignature)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 1. Admins
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && (isOwner(adminUid) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(adminUid) && isAdmin() && isValidAdminUser(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(adminUid) && isAdmin() && isValidAdminUser(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(adminUid) && isAdmin();
+    }
+
+    // 2. Diretório público de professores (sem PII)
+    match /school_teachers/{teacherId} {
+      allow get: if isValidId(teacherId) && isVerifiedUser();
+      allow list: if isVerifiedUser();
+      allow create: if isValidId(teacherId) && isAdmin() && isValidSchoolTeacher(incoming())
+        && incoming().id == teacherId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(teacherId) && isAdmin() && isValidSchoolTeacher(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'subject', 'classes', 'updatedAt']);
+      allow delete: if isValidId(teacherId) && isAdmin();
+    }
+
+    // 3. Segredos e PII isolados
+    match /school_user_secrets/{userId} {
+      allow get: if isValidId(userId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid);
+      allow create: if isValidId(userId) && isAdmin() && isValidUserSecret(incoming())
+        && incoming().id == userId
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId) && isAdmin() && isValidUserSecret(incoming())
+        && incoming().id == existing().id
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['ownerUid', 'email', 'username', 'accessCode', 'updatedAt']);
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // 4. Turmas
+    match /school_classes/{classId} {
+      allow get: if isValidId(classId) && isVerifiedUser();
+      allow list: if isVerifiedUser();
+      allow create: if isValidId(classId) && isAdmin() && isValidSchoolClass(incoming())
+        && incoming().id == classId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(classId) && isAdmin() && isValidSchoolClass(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'shift', 'year', 'description', 'updatedAt']);
+      allow delete: if isValidId(classId) && isAdmin();
+    }
+
+    // 5. Estudantes (PII escolar restrito à Direção/Admin)
+    match /school_students/{studentId} {
+      allow get: if isValidId(studentId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(studentId) && isAdmin() && isValidStudent(incoming())
+        && incoming().id == studentId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(studentId) && isAdmin() && isValidStudent(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'rollNumber', 'classGroup', 'status', 'notes', 'updatedAt']);
+      allow delete: if isValidId(studentId) && isAdmin();
+    }
+
+    // 6. Seções do questionário
+    match /school_sections/{sectionId} {
+      allow get: if isValidId(sectionId) && isVerifiedUser();
+      allow list: if isVerifiedUser();
+      allow create: if isValidId(sectionId) && isAdmin() && isValidSection(incoming())
+        && incoming().id == sectionId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(sectionId) && isAdmin() && isValidSection(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'order', 'updatedAt']);
+      allow delete: if isValidId(sectionId) && isAdmin();
+    }
+
+    // 7. Perguntas do questionário
+    match /school_questions/{questionId} {
+      allow get: if isValidId(questionId) && isVerifiedUser();
+      allow list: if isVerifiedUser();
+      allow create: if isValidId(questionId) && isAdmin() && isValidQuestion(incoming())
+        && incoming().id == questionId
+        && exists(/databases/$(database)/documents/school_sections/$(incoming().sectionId))
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(questionId) && isAdmin() && isValidQuestion(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['sectionId', 'prompt', 'placeholder', 'required', 'order', 'updatedAt']);
+      allow delete: if isValidId(questionId) && isAdmin();
+    }
+
+    // 8. Fichas individuais de Pré-Conselho
+    match /school_reports/{reportId} {
+      allow get: if isValidId(reportId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid);
+
+      allow create: if isValidId(reportId) && isVerifiedUser() && isValidReport(incoming())
+        && incoming().id == reportId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() || (
+            incoming().ownerUid == request.auth.uid
+            && incoming().status in ['pendente', 'rascunho', 'enviado']
+            && incoming().pedagogaSignature.signed == false
+            && incoming().diretoraSignature.signed == false
+          )
+        );
+
+      allow update: if isValidId(reportId) && isVerifiedUser() && isValidReport(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() || (
+            existing().ownerUid == request.auth.uid
+            && existing().status != 'visto'
+            && incoming().status in ['rascunho', 'enviado']
+            && incoming().pedagogaSignature == existing().pedagogaSignature
+            && incoming().diretoraSignature == existing().diretoraSignature
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'component', 'classGroup', 'date', 'bimester', 'status',
+              'answers', 'dimensionRatings', 'studentRatings', 'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isValidId(reportId) && isAdmin();
+    }
+  }
+}

@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+}
+
+@keyframes bulb-twinkle-a {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1.15);
+    transform: scale(1);
+  }
+  45% {
+    opacity: 0.42;
+    filter: brightness(0.65);
+    transform: scale(0.94);
+  }
+  70% {
+    opacity: 0.92;
+    filter: brightness(1.05);
+    transform: scale(1);
+  }
+}
+
+@keyframes bulb-twinkle-b {
+  0%, 100% {
+    opacity: 0.48;
+    filter: brightness(0.7);
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2);
+    transform: scale(1.04);
+  }
+}
+
+@keyframes star-shimmer {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes smoke-rise {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(-28px) translateX(8px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-bulb-a {
+  animation: bulb-twinkle-a 2.1s ease-in-out infinite;
+}
+
+.animate-bulb-b {
+  animation: bulb-twinkle-b 2.4s ease-in-out infinite;
+}
+
+.animate-star {
+  animation: star-shimmer 3.2s ease-in-out infinite;
+}
+
+.animate-smoke {
+  animation: smoke-rise 4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bulb-a,
+  .animate-bulb-b,
+  .animate-star,
+  .animate-smoke {
+    animation: none !important;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only-container {
+    position: static !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
